@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Cultural do Grande ABC - Rotas e Histórias</title>
+
+    <!-- CSS do Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Ícones do Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- CSS do Leaflet (Mapa Interativo) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        #map {
+            height: 420px;
+            width: 100%;
+            border-radius: 0.5rem;
+            z-index: 1;
+        }
+
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.70), rgba(0, 0, 0, 0.70)), 
+                        url('https://images.unsplash.com/photo-1578002171601-902a5a7645a4?auto=format&fit=crop&w=1500&q=80') center/cover no-repeat;
+            padding: 90px 0;
+            color: white;
+        }
+
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navegação Bootstrap -->
+    <nav class="navbar navbar-expand-lg border-bottom sticky-top bg-body-tertiary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-map-fill text-warning me-2"></i>Guia Cultural Grande ABC
+            </a>
+            
+            <div class="d-flex align-items-center ms-auto ms-lg-0 order-lg-last gap-2">
+                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="btnThemeToggle" type="button" aria-label="Alternar tema">
+                    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                    <span class="d-none d-md-inline ms-1" id="themeText">Modo Escuro</span>
+                </button>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto me-3">
+                    <li class="nav-item"><a class="nav-link active" href="#home">Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#mapa-rotas">Rotas por Cidade</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#espacos">Espaços Culturais</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#dicas">Dicas do Visitante</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Banner Principal (Hero) -->
+    <section id="home" class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Explore o Patrimônio Cultural do Grande ABC</h1>
+            <p class="lead col-lg-8 mx-auto">Mapeamento dos principais teatros, museus, centros culturais e parques históricos de Santo André, São Bernardo do Campo, São Caetano do Sul e Diadema.</p>
+            <a href="#mapa-rotas" class="btn btn-warning btn-lg fw-semibold mt-3 rounded-pill">
+                <i class="bi bi-geo-alt-fill me-1"></i> Explorar Mapa do ABC
+            </a>
+        </div>
+    </section>
+
+    <!-- Seção do Mapa Interativo -->
+    <section id="mapa-rotas" class="py-5">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">Rotas Culturais Interativas</h2>
+                <p class="text-secondary">Selecione uma rota regional para visualizar os pontos de interesse diretamente no mapa.</p>
+                
+                <div class="btn-group gap-2 d-inline-flex flex-wrap justify-content-center" role="group">
+                    <button type="button" class="btn btn-warning rounded-pill active px-4" onclick="carregarRota('santo_andre', this)">
+                        <i class="bi bi-building me-1"></i> Rota Santo André
+                    </button>
+                    <button type="button" class="btn btn-outline-warning rounded-pill px-4" onclick="carregarRota('sbc', this)">
+                        <i class="bi bi-camera-reels me-1"></i> Rota São Bernardo
+                    </button>
+                    <button type="button" class="btn btn-outline-warning rounded-pill px-4" onclick="carregarRota('scs_diadema', this)">
+                        <i class="bi bi-journal-bookmark me-1"></i> Rota São Caetano & Diadema
+                    </button>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-3 p-md-4">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div id="map"></div>
+                        </div>
+
+                        <div class="col-lg-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <h4 id="route-title" class="fw-bold text-primary-emphasis mb-2">Carregando...</h4>
+                                <p id="route-desc" class="text-secondary small mb-3">Selecione uma rota para carregar os detalhes.</p>
+                                <hr>
+                                <h6 class="fw-bold mb-3"><i class="bi bi-pin-map-fill text-danger me-1"></i> Espaços Culturais da Rota:</h6>
+                                <ol id="route-steps" class="list-group list-group-numbered list-group-flush mb-3 small">
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Espaços Culturais (Cards Mapeados) -->
+    <section id="espacos" class="py-5 bg-body-tertiary">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Espaços Culturais Mapeados</h2>
+                <p class="text-secondary">Fichas técnicas dos equipamentos culturais do Grande ABC.</p>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                
+                <!-- 1. Sabina -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1043/600/400" class="card-img-top" alt="Sabina Escola Parque">
+                        <div class="card-body">
+                            <span class="badge bg-primary mb-2">Santo André</span>
+                            <h5 class="card-title fw-bold">Sabina Escola Parque do Conhecimento</h5>
+                            <p class="card-text text-secondary small">Projetado por Paulo Mendes da Rocha, abriga pinguinário vivo, réplicas de dinossauros e o Planetário Johannes Kepler.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>R. Juquiá, s/n - Vila Eldizia</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-clock me-1"></i>Sáb/Dom/Feriados: 9h30 às 17h30</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Teatro Municipal de Santo André -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1076/600/400" class="card-img-top" alt="Teatro Municipal de Santo André">
+                        <div class="card-body">
+                            <span class="badge bg-primary mb-2">Santo André</span>
+                            <h5 class="card-title fw-bold">Teatro Municipal – Maestro Flávio Florence</h5>
+                            <p class="card-text text-secondary small">Integrado ao Paço Municipal, destaca-se pela acústica e pelo projeto paisagístico assinado por Burle Marx.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>Praça IV Centenário, 01 - Centro</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-calendar-event me-1"></i>Conforme a programação</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Sesc Santo André -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1060/600/400" class="card-img-top" alt="Sesc Santo André">
+                        <div class="card-body">
+                            <span class="badge bg-primary mb-2">Santo André</span>
+                            <h5 class="card-title fw-bold">Sesc Santo André</h5>
+                            <p class="card-text text-secondary small">Polo cultural e de lazer com peças de teatro, shows, exposições contemporâneas, oficinas e comedoria.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>R. Tamarutaca, 302 - Vila Guiomar</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-clock me-1"></i>Ter a Sex: 10h-22h | Sáb/Dom: 10h-19h</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Pinacoteca de SBC -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1067/600/400" class="card-img-top" alt="Pinacoteca de SBC">
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">São Bernardo do Campo</span>
+                            <h5 class="card-title fw-bold">Pinacoteca de São Bernardo</h5>
+                            <p class="card-text text-secondary small">O maior espaço de artes visuais do ABC, com exposições de arte contemporânea, acervo permanente e jardim de esculturas.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>R. Kara, 135 - Jardim do Mar</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-ticket-perforated me-1"></i>Entrada e estacionamento gratuitos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Teatro Lauro Gomes -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1082/600/400" class="card-img-top" alt="Teatro Lauro Gomes">
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">São Bernardo do Campo</span>
+                            <h5 class="card-title fw-bold">Teatro Lauro Gomes</h5>
+                            <p class="card-text text-secondary small">Tradicional espaço teatral no bairro Rudge Ramos, palco de comédias, espetáculos infantis e festivais de dança.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>R. Helena Jacquey, 171 - Rudge Ramos</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-calendar-event me-1"></i>Abre conforme programação</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Chácara Silvestre -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1015/600/400" class="card-img-top" alt="Parque Chácara Silvestre">
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">São Bernardo do Campo</span>
+                            <h5 class="card-title fw-bold">Parque Chácara Silvestre</h5>
+                            <p class="card-text text-secondary small">Combina área verde com o histórico Casarão de Wallace Simonsen, abrigando centro de memória e playground inclusivo.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>Av. Wallace Simonsen, 1800 - Nova Petrópolis</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-clock me-1"></i>Parque: Diariamente das 6h às 20h</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Vera Cruz -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1071/600/400" class="card-img-top" alt="Companhia Cinematográfica Vera Cruz">
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">São Bernardo do Campo</span>
+                            <h5 class="card-title fw-bold">Cia. Cinematográfica Vera Cruz</h5>
+                            <p class="card-text text-secondary small">Histórico pavilhão conhecido como a "Hollywood Brasileira" dos anos 50. Recebe grandes feiras, gravações e eventos.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>Av. Lucas Nogueira Garcez, 856 - Centro</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-calendar-event me-1"></i>Abre conforme agenda de eventos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Fundação Pró-Memória -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1025/600/400" class="card-img-top" alt="Fundação Pró-Memória">
+                        <div class="card-body">
+                            <span class="badge bg-success mb-2">São Caetano do Sul</span>
+                            <h5 class="card-title fw-bold">Fundação Pró-Memória</h5>
+                            <p class="card-text text-secondary small">Preserva a história regional através de exposições fotográficas, guarda de acervo documental e memória da imigração.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>Av. Dr. Augusto de Toledo, 255 - Santa Paula</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-info-circle me-1"></i>Consulte o horário no site oficial</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Teatro Paulo Machado de Carvalho -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1052/600/400" class="card-img-top" alt="Teatro Paulo Machado de Carvalho">
+                        <div class="card-body">
+                            <span class="badge bg-success mb-2">São Caetano do Sul</span>
+                            <h5 class="card-title fw-bold">Teatro Paulo Machado de Carvalho</h5>
+                            <p class="card-text text-secondary small">Maior teatro da cidade, sede da Orquestra Filarmônica de São Caetano do Sul e palco de grandes espetáculos nacionais.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>Al. Conde de Porto Alegre, 840 - Santa Maria</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-music-note-beamed me-1"></i>Sede da Orquestra Filarmônica</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. Fábrica de Cultura Diadema -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="https://picsum.photos/id/1040/600/400" class="card-img-top" alt="Fábrica de Cultura de Diadema">
+                        <div class="card-body">
+                            <span class="badge bg-warning text-dark mb-2">Diadema</span>
+                            <h5 class="card-title fw-bold">Fábrica de Cultura de Diadema</h5>
+                            <p class="card-text text-secondary small">Espaço voltado para arte-educação com formação artística gratuita, biblioteca, apresentações de hip-hop, circo e teatro.</p>
+                            <hr class="my-2">
+                            <p class="mb-1 extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>R. Ver. Gustavo Sonnewend Neto, 135 - Centro</p>
+                            <p class="mb-0 extra-small text-muted"><i class="bi bi-clock me-1"></i>Ter a Sex: 9h-20h | Sáb: 9h-17h | Atividades gratuitas</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Dicas para o Turista -->
+    <section id="dicas" class="py-5">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">Dicas para Acessar a Rede Cultural</h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="p-4 border rounded bg-body-tertiary h-100">
+                        <i class="bi bi-train-front fs-1 text-warning mb-2 d-block"></i>
+                        <h5 class="fw-bold">Transporte e Integração</h5>
+                        <p class="text-secondary mb-0">Utilize a Linha 10-Turquesa da CPTM (estações Santo André e São Caetano) e o Corredor ABD de Trólebus para ligar SBC e Diadema.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 border rounded bg-body-tertiary h-100">
+                        <i class="bi bi-ticket-perforated fs-1 text-warning mb-2 d-block"></i>
+                        <h5 class="fw-bold">Gratuidade & Acessibilidade</h5>
+                        <p class="text-secondary mb-0">Pinacoteca de SBC, Parque Chácara Silvestre e Fábrica de Cultura de Diadema têm entrada gratuita. A Chácara conta com playground inclusivo; confira a acessibilidade de cada local antes de ir.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 border rounded bg-body-tertiary h-100">
+                        <i class="bi bi-calendar-check fs-1 text-warning mb-2 d-block"></i>
+                        <h5 class="fw-bold">Consulta de Agenda</h5>
+                        <p class="text-secondary mb-0">Teatros municipais e a Cia. Vera Cruz abrem conforme a grade de espetáculos e eventos da temporada.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="py-4 border-top bg-body-tertiary text-center text-secondary">
+        <div class="container">
+            <p class="mb-0">&copy; 2026 Mapeamento Cultural do Grande ABC - Projeto ADS. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- JS do Bootstrap 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/bootstrap.bundle.min.js"></script>
+    
+    <!-- JS do Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Chamada do seu arquivo externo com todo o código JS e Token Mapbox -->
+    <script src="java.js"></script>
+    
+</body>
+</html>
